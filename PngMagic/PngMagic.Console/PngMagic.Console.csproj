@@ -11,4 +11,13 @@
     <ProjectReference Include="..\PngMagic\PngMagic.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Prank Smile.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Smile.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
