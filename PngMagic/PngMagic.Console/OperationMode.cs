@@ -1,6 +1,4 @@
-﻿namespace PngMagic.Core;
-
-/// <summary>
+﻿/// <summary>
 /// Defines how the core should handle the PNG
 /// </summary>
 public enum OperationMode
