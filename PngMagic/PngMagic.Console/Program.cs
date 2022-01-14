@@ -28,6 +28,10 @@ OperationMode operationsMode = GetOperation(commandArgs[1]);
 // See https://aka.ms/new-console-template for more information
 Console.WriteLine($"Operation mode: {operationsMode}");
 
+string containerPng = commandArgs[2];
+string payloadPng = commandArgs[3];
+string outputPath = commandArgs[4];
+
 switch (operationsMode)
 {
     case OperationMode.Pack:
@@ -36,6 +40,8 @@ switch (operationsMode)
             Console.WriteLine($"Invalid argument patern, expected:\n{PackArgumentTemplate}");
             Environment.Exit(1);
         }
+
+        PackOperation.Start(containerPng, payloadPng);
 
         break;
 
