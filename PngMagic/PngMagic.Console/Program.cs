@@ -2,23 +2,19 @@
 using PngMagic.Core;
 
 const int PackArgumentCount = 5;
-const string PackArgumentTemplate = "pack <target image path> <pack image path> <output image path>";
+const string PackArgumentTemplate = "pack <target image path> <output image path> [pack image paths]";
 
-const int ExtractArgumentCount = 4;
-const string ExtractArgumentTemplate = "extract <target image path> <output image> path";
+const int ExtractArgumentCount = 3;
+const string ExtractArgumentTemplate = "extract <target image path>";
 
-const int ProjectArgumentCount = 4;
-const string ProjectArgumentTemplate = "project <target image path> <output image path>";
-
-const int MinArgCount = 4;
-const int MaxArgCount = 5;
-const string GenericArgumentErrorMessage = $"Invalid arguments, expected one of the following paterns:\n\n{PackArgumentTemplate}\n{ExtractArgumentTemplate}\n{ProjectArgumentTemplate}";
+const int MinArgCount = 3;
+const string GenericArgumentErrorMessage = $"Invalid arguments, expected one of the following paterns:\n\n{PackArgumentTemplate}\n{ExtractArgumentTemplate}";
 
 
 
 var commandArgs = Environment.GetCommandLineArgs();
 
-if (commandArgs.Length < MinArgCount || commandArgs.Length > MaxArgCount)
+if (commandArgs.Length < MinArgCount)
 {
     Console.WriteLine(GenericArgumentErrorMessage);
     Environment.Exit(1);
@@ -26,12 +22,9 @@ if (commandArgs.Length < MinArgCount || commandArgs.Length > MaxArgCount)
 
 OperationMode operationsMode = GetOperation(commandArgs[1]);
 
-// See https://aka.ms/new-console-template for more information
 Console.WriteLine($"Operation mode: {operationsMode}");
 
 string containerPng = commandArgs[2];
-string payloadPng = commandArgs[3];
-string outputPath = commandArgs[4];
 
 switch (operationsMode)
 {
@@ -42,8 +35,8 @@ switch (operationsMode)
             Environment.Exit(1);
         }
 
-        using (var outputStream = File.OpenWrite(outputPath))
-        using (var payloadStream = File.OpenRead(payloadPng))
+        using (var outputStream = File.OpenWrite(commandArgs[4]))
+        using (var payloadStream = File.OpenRead(commandArgs[3]))
         {
             PackOperation.Start(containerPng, outputStream, payloadStream);
         }
@@ -57,16 +50,14 @@ switch (operationsMode)
             Environment.Exit(1);
         }
 
-
-        break;
-
-    case OperationMode.Project:
-        if (commandArgs.Length != ProjectArgumentCount)
+        int i = 1;
+        foreach(var payload in ExtractOperation.GetInjectedPayloads(containerPng))
         {
-            Console.WriteLine($"Invalid argument patern, expected:\n{ProjectArgumentTemplate}");
-            Environment.Exit(1);
-        }
+            string destination = $"unpack_{i}_" + containerPng;
+            File.WriteAllBytes(destination, payload);
 
+            Console.WriteLine($"Unpacked a payload to {destination}");
+        }
 
         break;
 
