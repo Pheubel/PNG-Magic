@@ -6,21 +6,15 @@ namespace PngMagic.Core;
 public static class PackOperation
 {
     const int DATA_BUFFER_SIZE = 1028;
-    public static void Start(string containerPng, string payload, Stream outputStream)
+
+    public static void Start(string containerPng, Stream outputStream, params Stream[] payloadStreams)
     {
         if (!File.Exists(containerPng))
         {
             throw new FileNotFoundException(containerPng);
         }
 
-        if (!File.Exists(payload))
-        {
-            throw new FileNotFoundException(payload);
-        }
-
         using FileStream containerStream = File.OpenRead(containerPng);
-
-        ReadOnlySpan<byte> payloadBytes = File.ReadAllBytes(payload);
 
         Span<byte> signature = stackalloc byte[8];
         containerStream.Read(signature);
@@ -109,29 +103,60 @@ public static class PackOperation
             // is current type IHDR
             if (chunkTypeValue == 1229472850)
             {
-                // reset the CRC for the injected chunk
-                crc = default;
+                foreach (var payloadStream in payloadStreams)
+                {
+                    // reset the CRC for the injected chunk
+                    crc = default;
 
-                // write injected chunk size
-                uint cz = (uint)payloadBytes.Length;
-                MemoryMarshal.Write(wordBuffer, ref cz);
-                wordBuffer.ReverseOnLittleEndian();
+                    // write injected chunk size
+                    uint cz = (uint)payloadStream.Length;
+#if DEBUG
+                    Console.WriteLine($"Injected chunk size: {cz}");
+#endif
 
-                outputStream.Write(wordBuffer);
+                    MemoryMarshal.Write(wordBuffer, ref cz);
+                    wordBuffer.ReverseOnLittleEndian();
 
-                // write injected chunk type
-                outputStream.Write(Utils.InjectedChunkType);
-                table.UpdateCRC(Utils.InjectedChunkType, crc);
+                    outputStream.Write(wordBuffer);
 
-                // write injected data
-                outputStream.Write(payloadBytes);
-                table.UpdateCRC(payloadBytes, crc);
+                    // write injected chunk type
+                    outputStream.Write(Utils.InjectedChunkType);
+                    table.UpdateCRC(Utils.InjectedChunkType, crc);
 
-                // write injected CRC
-                MemoryMarshal.Write(wordBuffer, ref crc);
-                wordBuffer.ReverseOnLittleEndian();
+#if DEBUG
+                    Utils.InjectedChunkType.CopyTo(wordBuffer);
+                    wordBuffer.ReverseOnLittleEndian();
+                    Console.WriteLine($"Injected chunk type: {Encoding.UTF8.GetString(Utils.InjectedChunkType)} ({MemoryMarshal.Read<uint>(wordBuffer)})");
+#endif
 
-                outputStream.Write(wordBuffer);
+                    // write injected data
+                    bool write = true;
+                    while (write)
+                    {
+                        int toWrite = (int)Math.Min(DATA_BUFFER_SIZE, cz);
+                        Span<byte> writeSlice = dataBuffer[..toWrite];
+
+                        int readBytes = payloadStream.Read(writeSlice);
+                        outputStream.Write(writeSlice);
+                        crc = table.UpdateCRC(writeSlice, crc);
+
+
+                        if (cz <= DATA_BUFFER_SIZE)
+                            write = false;
+
+                        cz -= DATA_BUFFER_SIZE;
+                    }
+
+                    // write injected CRC
+                    MemoryMarshal.Write(wordBuffer, ref crc);
+                    wordBuffer.ReverseOnLittleEndian();
+
+                    outputStream.Write(wordBuffer);
+
+#if DEBUG
+                    Console.WriteLine($"injected CRC: {crc}");
+#endif
+                }
             }
         }
     }

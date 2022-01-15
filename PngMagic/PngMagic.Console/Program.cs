@@ -18,7 +18,7 @@ const string GenericArgumentErrorMessage = $"Invalid arguments, expected one of 
 
 var commandArgs = Environment.GetCommandLineArgs();
 
-if(commandArgs.Length < MinArgCount || commandArgs.Length > MaxArgCount)
+if (commandArgs.Length < MinArgCount || commandArgs.Length > MaxArgCount)
 {
     Console.WriteLine(GenericArgumentErrorMessage);
     Environment.Exit(1);
@@ -36,15 +36,16 @@ string outputPath = commandArgs[4];
 switch (operationsMode)
 {
     case OperationMode.Pack:
-        if(commandArgs.Length != PackArgumentCount)
+        if (commandArgs.Length != PackArgumentCount)
         {
             Console.WriteLine($"Invalid argument patern, expected:\n{PackArgumentTemplate}");
             Environment.Exit(1);
         }
 
-        using(var stream = File.OpenWrite(outputPath))
+        using (var outputStream = File.OpenWrite(outputPath))
+        using (var payloadStream = File.OpenRead(payloadPng))
         {
-            PackOperation.Start(containerPng, payloadPng, stream);
+            PackOperation.Start(containerPng, outputStream, payloadStream);
         }
 
         break;
