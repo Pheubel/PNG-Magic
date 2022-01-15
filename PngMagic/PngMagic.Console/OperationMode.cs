@@ -1,8 +1,5 @@
 ﻿namespace PngMagic.Console;
 
-/// <summary>
-/// Defines how the core should handle the PNG
-/// </summary>
 public enum OperationMode
 {
     /// <summary>
