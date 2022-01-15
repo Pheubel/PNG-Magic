@@ -1,4 +1,5 @@
-﻿using PngMagic.Core;
+﻿using PngMagic.Console;
+using PngMagic.Core;
 
 const int PackArgumentCount = 5;
 const string PackArgumentTemplate = "pack <target image path> <pack image path> <output image path>";
@@ -41,7 +42,10 @@ switch (operationsMode)
             Environment.Exit(1);
         }
 
-        PackOperation.Start(containerPng, payloadPng);
+        using(var stream = File.OpenWrite(outputPath))
+        {
+            PackOperation.Start(containerPng, payloadPng, stream);
+        }
 
         break;
 
