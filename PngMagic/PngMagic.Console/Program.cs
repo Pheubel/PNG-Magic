@@ -12,7 +12,7 @@ const string GenericArgumentErrorMessage = $"Invalid arguments, expected one of 
 
 
 
-var commandArgs = Environment.GetCommandLineArgs();
+Span<string> commandArgs = Environment.GetCommandLineArgs();
 
 if (commandArgs.Length < MinArgCount)
 {
@@ -29,16 +29,28 @@ string containerPng = commandArgs[2];
 switch (operationsMode)
 {
     case OperationMode.Pack:
-        if (commandArgs.Length != PackArgumentCount)
+        if (commandArgs.Length < PackArgumentCount)
         {
             Console.WriteLine($"Invalid argument patern, expected:\n{PackArgumentTemplate}");
             Environment.Exit(1);
         }
 
-        using (var outputStream = File.OpenWrite(commandArgs[4]))
-        using (var payloadStream = File.OpenRead(commandArgs[3]))
+        using (var outputStream = File.OpenWrite(commandArgs[3]))
         {
-            PackOperation.Start(containerPng, outputStream, payloadStream);
+            Span<string> payloadArgs = commandArgs[4..];
+            Stream[] payloadStreams = new Stream[payloadArgs.Length];
+
+            for (int i = 0; i < payloadArgs.Length; i++)
+            {
+                payloadStreams[i] = File.OpenRead(payloadArgs[i]);
+            }
+
+            PackOperation.Start(containerPng, outputStream, payloadStreams);
+
+            for (int i = 0; i < payloadStreams.Length; i++)
+            {
+                payloadStreams[i].Dispose();
+            }
         }
 
         break;
@@ -50,13 +62,14 @@ switch (operationsMode)
             Environment.Exit(1);
         }
 
-        int i = 1;
+        int count = 1;
         foreach(var payload in ExtractOperation.GetInjectedPayloads(containerPng))
         {
-            string destination = $"unpack_{i}_" + containerPng;
+            string destination = $"unpack_{count}_" + containerPng;
             File.WriteAllBytes(destination, payload);
 
             Console.WriteLine($"Unpacked a payload to {destination}");
+            count++;
         }
 
         break;
