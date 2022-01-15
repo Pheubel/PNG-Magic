@@ -4,10 +4,10 @@ using PngMagic.Core;
 const int PackArgumentCount = 5;
 const string PackArgumentTemplate = "pack <target image path> <output image path> [pack image paths]";
 
-const int ExtractArgumentCount = 3;
-const string ExtractArgumentTemplate = "extract <target image path>";
+const int ExtractArgumentCount = 4;
+const string ExtractArgumentTemplate = "extract <target image path> <extension type>";
 
-const int MinArgCount = 3;
+const int MinArgCount = 4;
 const string GenericArgumentErrorMessage = $"Invalid arguments, expected one of the following paterns:\n\n{PackArgumentTemplate}\n{ExtractArgumentTemplate}";
 
 
@@ -62,10 +62,12 @@ switch (operationsMode)
             Environment.Exit(1);
         }
 
+        string containerName = Path.GetFileNameWithoutExtension(containerPng);
+
         int count = 1;
         foreach(var payload in ExtractOperation.GetInjectedPayloads(containerPng))
         {
-            string destination = $"unpack_{count}_" + containerPng;
+            string destination = $"unpack_{count}_" + containerName + $".{commandArgs[3]}";
             File.WriteAllBytes(destination, payload);
 
             Console.WriteLine($"Unpacked a payload to {destination}");
