@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PngMagic.Core;
 
@@ -11,9 +7,9 @@ public static class ExtractOperation
 {
     const int DATA_BUFFER_SIZE = 1028;
 
-    public static IEnumerable<byte[]> GetInjectedPayloads(string containerPng)
+    public static IEnumerable<IPayload> GetInjectedPayloads(string containerPng)
     {
-        List<byte[]> payloads = new();
+        List<IPayload> payloads = new();
 
         if (!File.Exists(containerPng))
         {
@@ -38,6 +34,8 @@ public static class ExtractOperation
         Span<byte> wordBuffer = stackalloc byte[sizeof(int)];
         Span<byte> dataBuffer = stackalloc byte[DATA_BUFFER_SIZE];
 
+        HeaderData? currentHeader = null;
+
         bool quit = false;
         while (!quit)
         {
@@ -61,43 +59,56 @@ public static class ExtractOperation
 #if DEBUG
             Console.WriteLine($"Chunk type: {chunkType} ({chunkTypeValue})");
 #endif
+
+
             // is current type IEND
             if (chunkTypeValue == 1229278788)
             {
                 quit = true;
             }
-            // is current type injected
+            else if (chunkTypeValue == Utils.GetInjectedChunkHeaderTypeValue())
+            {
+                // read the chunk data
+                ReadToList(payloadBytes, chunkSize, containerStream, dataBuffer);
+
+                var plSpan =  CollectionsMarshal.AsSpan(payloadBytes);
+
+                currentHeader = new HeaderData()
+                {
+                    HeaderType = (HeaderType)plSpan[0],
+                    HeaderContent = plSpan.Length > 1 ? plSpan[1..].ToArray() : Array.Empty<byte>()
+                };
+
+                payloadBytes.Clear();
+            }
+            // is current type injected payload
             else if (chunkTypeValue == Utils.GetInjectedChunkTypeValue())
             {
                 // read the chunk data
-                bool read = true;
-                while (read)
+                ReadToList(payloadBytes, chunkSize, containerStream, dataBuffer);
+
+                var plb = payloadBytes.ToArray();
+
+                IPayload payload = (currentHeader?.HeaderType ?? HeaderType.RawBytes) switch
                 {
-                    int toRead = (int)Math.Min(DATA_BUFFER_SIZE, chunkSize);
+                    HeaderType.RawBytes => new RawBytePayload(plb),
+                    HeaderType.File => new FilePayload(currentHeader!.ContentToString(), plb),
+                    _ => throw new NotSupportedException($"header with type \"{currentHeader}\" is not supported")
+                };
 
-                    Span<byte> readSlice = dataBuffer[..toRead];
+                payloads.Add(payload);
 
-                    int readBytes = containerStream.Read(readSlice);
-
-                    // might be a better way to do this
-                    foreach (var readByte in readSlice)
-                    {
-                        payloadBytes.Add(readByte);
-                    }
-
-                    if (chunkSize <= DATA_BUFFER_SIZE)
-                        read = false;
-
-                    chunkSize -= DATA_BUFFER_SIZE;
-                }
-
-                payloads.Add(payloadBytes.ToArray());
+                // clean up
                 payloadBytes.Clear();
+                currentHeader = null;
             }
             // skip chunk if it's not interesting
             else
             {
                 containerStream.Position += chunkSize;
+
+                // reset header just in case
+                currentHeader = null;
             }
 
             // read CRC
@@ -111,5 +122,29 @@ public static class ExtractOperation
 
         return payloads;
     }
-}
 
+    private static void ReadToList(List<byte> container, uint chunkSize, Stream containerStream, Span<byte> dataBuffer)
+    {
+        // read the chunk data
+        bool read = true;
+        while (read)
+        {
+            int toRead = (int)Math.Min(DATA_BUFFER_SIZE, chunkSize);
+
+            Span<byte> readSlice = dataBuffer[..toRead];
+
+            int readBytes = containerStream.Read(readSlice);
+
+            // might be a better way to do this
+            foreach (var readByte in readSlice)
+            {
+                container.Add(readByte);
+            }
+
+            if (chunkSize <= DATA_BUFFER_SIZE)
+                read = false;
+
+            chunkSize -= DATA_BUFFER_SIZE;
+        }
+    }
+}

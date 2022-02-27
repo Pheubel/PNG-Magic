@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PngMagic.Console": {
+      "commandName": "Project",
+      "commandLineArgs": "pack .\\smile.png .\\smile_packed.png \".\\sussy boy.gif\""
+    }
+  }
+}
