@@ -8,7 +8,7 @@ public static class PackOperation
     const int DATA_BUFFER_SIZE = 1028;
 
     public static void Start(string containerPng, Stream outputStream, params Stream[] payloadStreams) =>
-        Start(containerPng, outputStream, payloadStreams);
+        Start(containerPng, outputStream, payloadStreams.AsSpan());
 
     public static void Start(string containerPng, Stream outputStream, ReadOnlySpan<Stream> payloadStreams)
     {
@@ -204,7 +204,7 @@ public static class PackOperation
     }
 
     public static void Start(string containerPng, Stream outputStream, params string[] payloadFiles) =>
-        Start(containerPng, outputStream, payloadFiles);
+        Start(containerPng, outputStream, payloadFiles.AsSpan());
 
     public static void Start(string containerPng, Stream outputStream, ReadOnlySpan<string> payloadFiles)
     {
