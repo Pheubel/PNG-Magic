@@ -1,0 +1,83 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PngMagic.Gui.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="PngMagic.Gui.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="PngMagic.Gui"
+		SizeToContent="WidthAndHeight"
+		CanResize="False">
+
+	<Design.DataContext>
+		<vm:MainWindowViewModel/>
+	</Design.DataContext>
+
+	<Grid
+		ShowGridLines="True"
+		RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto"
+        ColumnDefinitions="Auto,*"
+        Margin="30"
+        Width="800">
+
+		<TextBox
+			Grid.Row="1"
+			Grid.Column="1"
+			Grid.ColumnSpan="1"
+			IsReadOnly="True"
+			Text="{Binding SelectedImage}"
+			TextAlignment="Center"
+			Focusable="False"
+			BorderThickness="0"
+			IsTabStop="False"
+			Padding="10"
+			TextWrapping="WrapWithOverflow"
+			/>
+		
+		<Button
+			Name="SelectTargetButton"
+			Grid.Row="2"
+			Grid.Column="1"
+			Command="{Binding SelectImageTargetCommand}"
+			Content="Select target image"
+			HorizontalAlignment="Center"
+			Margin="20"
+			/>
+		
+		<Button
+			Name="PackIntoTargetButton"
+			Grid.Row="3"
+			Grid.Column="1"
+			Command="{Binding PackIntoImageTargetCommand}"
+			Content="Pack with images"
+			HorizontalAlignment="Center"
+			Margin="5"
+			IsEnabled="False"
+			/>
+		
+		<Button
+			Name="ExtractFromTargetButton"
+			Grid.Row="4"
+			Grid.Column="1"
+			Command="{Binding ExtractFromImageTargetCommand}"
+			Content="Extract images from target"
+			HorizontalAlignment="Center"
+			Margin="5"
+			IsEnabled="False"
+			/>
+
+		<Button
+			Grid.Row="5"
+			Grid.Column="1"
+			Command="{Binding ViewPackedImagesTargetCommand}"
+			Content="View packed images"
+			HorizontalAlignment="Center"
+			Margin="5"
+			IsTabStop="False"
+			IsEnabled="False"
+			IsVisible="False"
+			/>
+		
+	</Grid>
+</Window>
